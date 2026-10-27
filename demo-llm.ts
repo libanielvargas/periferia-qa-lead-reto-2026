@@ -7,14 +7,13 @@
  */
 import { resolve } from "node:path"
 import { AdaptadorAnthropic } from "./src/llm/anthropic.ts"
+import { AdaptadorGroq } from "./src/llm/groq.ts"
 import { ejecutarTurno, obtenerSesion } from "./src/agent/ciclo.ts"
 
-const clave = process.env.ANTHROPIC_API_KEY
-if (!clave) {
-  console.error(
-    "Falta ANTHROPIC_API_KEY en el entorno. Esta comprobación consume tokens del proveedor;\n" +
-      "para verificar las herramientas sin modelo use: npm run demo",
-  )
+const groq = process.env.GROQ_API_KEY
+const anthropic = process.env.ANTHROPIC_API_KEY
+if (!groq && !anthropic) {
+  console.error("Falta GROQ_API_KEY o ANTHROPIC_API_KEY en el backend; use npm run demo para comprobación sin modelo")
   process.exit(1)
 }
 
@@ -22,7 +21,9 @@ const mensaje =
   process.argv.slice(2).join(" ") ||
   'Procesa la solicitud "sol-004". Muéstrame la OC como quedaría en SAP, qué validaciones pasó y cuáles no, y no la crees hasta que yo lo confirme.'
 
-const adaptador = new AdaptadorAnthropic(clave, process.env.LLM_MODEL ?? "claude-sonnet-5")
+const adaptador = groq
+  ? new AdaptadorGroq(groq, process.env.LLM_MODEL ?? "openai/gpt-oss-120b")
+  : new AdaptadorAnthropic(anthropic!, process.env.LLM_MODEL ?? "claude-sonnet-5")
 const ctx = { directory: resolve(import.meta.dirname), sessionId: "demo-llm" }
 
 console.log(`▸ proveedor ${adaptador.proveedor} · modelo ${adaptador.modelo}`)

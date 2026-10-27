@@ -29,7 +29,7 @@ puede medir qué porcentaje de las OC se crea después de que llegó la factura.
                         ┌───────────────▼──┐      ┌────▼─────────────────────┐
                         │ src/llm/         │      │ src/tools/oc.ts          │
                         │ adapter.ts (iface)│      │ herramientas zod         │
-                        │ anthropic.ts      │      │ registro.ts (validación) │
+                        │ groq.ts           │      │ registro.ts (validación) │
                         └──────────────────┘      └────┬─────────────────────┘
                                         ┌──────────────▼──────────────┐
                                         │ src/lib/  controles RC1–RC10│
@@ -86,29 +86,27 @@ Costo: además del tope por turno hay un tope de **tokens por sesión** (200 000
 defecto). Al alcanzarlo la sesión responde que debe abrirse una nueva, de modo que un
 visitante del link público no puede consumir la clave sin límite.
 
-## 4. Elección del modelo
+## 4. Elección del modelo (implementación verificada)
 
-**Anthropic · `claude-sonnet-5`** (configurable con `LLM_MODEL`; el adaptador no depende
-del modelo).
+**Groq · `openai/gpt-oss-120b`**, usando la API de chat compatible con OpenAI y
+llamadas a herramientas. También se conserva el adaptador de Anthropic como alternativa.
+El modelo se determina por la credencial existente y es configurable mediante
+`LLM_MODEL`. La clave está únicamente en el backend y no forma parte de GitHub.
 
-Por qué: este flujo no requiere razonamiento abierto, requiere *disciplina de herramientas*
-—llamar la correcta, no inventar valores, parar y preguntar—. Sonnet 5 cumple eso con
-un costo por caso tres veces menor que un modelo de la gama superior, y el adaptador
-permite subir a Opus con una variable de entorno si en la defensa se quiere comparar.
+La cuenta de Groq habilita ese modelo; la prueba real devolvió HTTP 200 desde
+`/api/chat`. La prueba integrada  `npm run demo:llm` ejecutó las herramientas
+`oc_leer_paquete` y  `oc_validar` sobre  `sol-004`, reportó la excepción
+RC5 (diferencia del 6 % frente a la cotización) y exigió confirmación antes de
+crear la OC. La decisión no se fuerza ni se inventa.
 
-Costo estimado por caso procesado (tarifa Sonnet 5: USD 2 / MTok entrada, 10 / MTok salida):
+El proveedor impone un límite observable de **8.000 tokens por minuto** para este
+modelo en la cuenta de prueba. El adaptador espera automáticamente una vez cuando
+recibe HTTP 429 con tiempo de reintento de hasta 60 segundos y, si no puede
+continuar, informa el bloqueo sin perder la sesión.
 
-| Concepto | Tokens aprox. | Costo |
-|---|---|---|
-| System prompt (prompt + conocimiento), 1.ª vez | ~2 500 entrada | 0,005 USD |
-| 3–4 iteraciones del turno (historial + resultados de herramienta) | ~9 000 entrada | 0,018 USD |
-| Respuestas del modelo (tabla de la OC + preguntas) | ~1 200 salida | 0,012 USD |
-| **Total por caso completo, incluida la confirmación** | | **≈ 0,035 USD** |
-
-Con caché de prompt el system prompt se cobra a una fracción desde el segundo turno, así
-que un caso que se procese en dos turnos (validar → confirmar) queda por debajo de 0,04
-USD. A 500 OC/mes son unos 20 USD mensuales de modelo, frente al tiempo de digitación que
-reemplaza.
+El costo final depende de la cuota y la facturación real de Groq; no se atribuye
+a esta ejecución un costo estimado de Anthropic. Las pruebas deterministas no
+consumen tokens del modelo.
 
 ## 5. Matriz de controles RC1–RC10
 
@@ -345,7 +343,7 @@ velocidad de escritura, no criterio de diseño.
 ## 13. Link de prueba
 
 **URL pública (túnel Cloudflare efímero, activo durante la defensa):**
-`https://christmas-counseling-expenditures-boards.trycloudflare.com`
+`https://static-baseline-vatican-anatomy.trycloudflare.com`
 
 Sin clave de acceso: el PRD permite el link público. El `sessionId` lo genera el navegador,
 así que cada pestaña es una conversación independiente.
@@ -353,9 +351,9 @@ así que cada pestaña es una conversación independiente.
 Verificación externa en el momento de la entrega:
 
 ```
-$ curl -s https://christmas-counseling-expenditures-boards.trycloudflare.com/api/health
-{"ok":true,"provider":"anthropic","model":"claude-sonnet-5", ... }
-$ curl -o /dev/null -w "%{http_code}" https://christmas-counseling-expenditures-boards.trycloudflare.com/
+$ curl -s https://static-baseline-vatican-anatomy.trycloudflare.com/api/health
+{"ok":true,"provider":"groq","model":"openai/gpt-oss-120b", ... }
+$ curl -o /dev/null -w "%{http_code}" https://static-baseline-vatican-anatomy.trycloudflare.com/
 200
 ```
 

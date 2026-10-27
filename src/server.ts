@@ -7,9 +7,11 @@
  * GET  /api/casos          casos disponibles en fixtures (para los atajos del front)
  */
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http"
+import { execFile } from "node:child_process"
 import { readdirSync, readFileSync, existsSync } from "node:fs"
 import { extname, join, normalize, resolve } from "node:path"
 import { AdaptadorAnthropic } from "./llm/anthropic.ts"
+import { AdaptadorGroq } from "./llm/groq.ts"
 import { ErrorProveedor, type LlmAdapter } from "./llm/adapter.ts"
 import {
   LIMITES,
@@ -21,21 +23,22 @@ import { nombresHerramientas } from "./tools/registro.ts"
 
 const DIRECTORIO = resolve(import.meta.dirname, "..")
 const PUERTO = Number(process.env.PORT ?? 8787)
-const MODELO = process.env.LLM_MODEL ?? "claude-sonnet-5"
+const PROVEEDOR = process.env.GROQ_API_KEY ? "groq" : "anthropic"
+const MODELO = process.env.LLM_MODEL ?? (PROVEEDOR === "groq" ? "openai/gpt-oss-120b" : "claude-sonnet-5")
 const LIMITE_CUERPO = 1_000_000
+let demoEnCurso = false
 
 /** El adaptador se construye una vez; si no hay clave, el chat responde 503 explicando. */
 function construirAdaptador(): { adaptador: LlmAdapter | null; motivo: string | null } {
-  const clave = process.env.ANTHROPIC_API_KEY
-  if (!clave || clave.trim() === "") {
+  const groq = process.env.GROQ_API_KEY
+  const anthropic = process.env.ANTHROPIC_API_KEY
+  try {
+    if (groq?.trim()) return { adaptador: new AdaptadorGroq(groq, MODELO), motivo: null }
+    if (anthropic?.trim()) return { adaptador: new AdaptadorAnthropic(anthropic, MODELO), motivo: null }
     return {
       adaptador: null,
-      motivo:
-        "el backend no tiene ANTHROPIC_API_KEY configurada; el chat con modelo real está deshabilitado (las herramientas siguen verificables con `npm run demo`)",
+      motivo: "Configure GROQ_API_KEY o ANTHROPIC_API_KEY en el servidor para habilitar el agente conversacional.",
     }
-  }
-  try {
-    return { adaptador: new AdaptadorAnthropic(clave, MODELO), motivo: null }
   } catch (causa) {
     return { adaptador: null, motivo: causa instanceof Error ? causa.message : String(causa) }
   }
@@ -70,6 +73,7 @@ const TIPOS: Record<string, string> = {
   ".css": "text/css; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
   ".svg": "image/svg+xml",
+  ".png": "image/png",
 }
 
 function servirEstatico(ruta: string, res: ServerResponse): boolean {
@@ -94,11 +98,35 @@ const servidor = createServer(async (req, res) => {
   const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`)
 
   try {
+
+    if (req.method === "POST" && url.pathname === "/api/demo") {
+      if (demoEnCurso) return json(res, 409, { ok: false, error: "La demo ya está ejecutándose; espere su resultado." })
+      demoEnCurso = true
+      try {
+        const salida = await new Promise<string>((resolver, rechazar) => {
+          execFile(process.execPath, [join(DIRECTORIO, "demo.ts")], {
+            cwd: DIRECTORIO,
+            timeout: 60_000,
+            maxBuffer: 1_000_000,
+            env: Object.fromEntries(Object.entries(process.env).filter(([nombre]) => nombre !== "GROQ_API_KEY" && nombre !== "ANTHROPIC_API_KEY")),
+          }, (error, stdout, stderr) => {
+            if (error) rechazar(new Error("demo.ts terminó con error: " + (stderr || error.message).slice(0, 600)))
+            else resolver(stdout)
+          })
+        })
+        return json(res, 200, { ok: true, salida, sin_ia: true })
+      } catch (error) {
+        return json(res, 500, { ok: false, error: error instanceof Error ? error.message : "No se pudo ejecutar la demo" })
+      } finally {
+        demoEnCurso = false
+      }
+    }
+
     if (req.method === "GET" && url.pathname === "/api/health") {
       // Nunca expone la clave: solo si está configurada o no.
       return json(res, 200, {
         ok: true,
-        provider: "anthropic",
+        provider: adaptador?.proveedor ?? PROVEEDOR,
         model: MODELO,
         llm_configurado: adaptador !== null,
         motivo_llm: motivo,
@@ -172,7 +200,7 @@ const servidor = createServer(async (req, res) => {
   }
 })
 
-servidor.listen(PUERTO, () => {
+servidor.listen(PUERTO, "127.0.0.1", () => {
   console.log(`▸ Agente de Órdenes de Compra SAP en http://localhost:${PUERTO}`)
   console.log(`  modelo: ${MODELO} · LLM ${adaptador ? "configurado" : `no configurado (${motivo})`}`)
   console.log(`  herramientas: ${nombresHerramientas().join(", ")}`)

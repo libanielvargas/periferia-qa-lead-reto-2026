@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Agente de Órdenes de Compra SAP</title>
+    <link rel="icon" type="image/png" href="/periferia-logo.png" />
     <style>
       :root {
         color-scheme: light dark;
@@ -303,13 +304,160 @@
         .composer-label { display: none; }
         button[type="submit"] { padding: 0 13px; }
       }
+
+      /* Identidad Periferia IT Group: negro, verde profundo, verde lima y blanco. */
+      :root {
+        color-scheme: light;
+        --fondo: #f3f8f5; --panel: #ffffff; --borde: #d9e9de;
+        --texto: #102b24; --suave: #5b726a; --acento: #35d96b;
+        --ok: #138044; --aviso-fondo: #fff7e6; --aviso-borde: #dfad35;
+        --error-fondo: #fff0ee; --error-borde: #d75246;
+      }
+      body {
+        background: radial-gradient(ellipse at 84% 0, #e7fff0 0, transparent 39%), #f4f8f5;
+        color: var(--texto);
+        font-family: "Avenir Next", "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+      header {
+        background: linear-gradient(115deg, #040a08 0%, #061c16 66%, #092d23 100%);
+        border-bottom: 3px solid #68ff88;
+        box-shadow: 0 14px 35px rgba(5, 40, 28, .14);
+      }
+      .brand-logo {
+        width: clamp(142px, 15vw, 204px) !important;
+        height: auto !important;
+        min-width: 0;
+        flex: 0 0 auto;
+        display: block;
+        object-fit: contain;
+        border: 0; border-radius: 0; background: none; box-shadow: none;
+      }
+      .identity { gap: clamp(15px, 3vw, 31px); }
+      .brand-caption { color: #68ff88; letter-spacing: .14em; }
+      .brand-caption span { color: #c1d8c8; }
+      header h1 { font-weight: 850; color: #fff; }
+      header p { color: #d5e7dd; }
+      #estado { background: rgba(102,255,136,.07); border-color: rgba(102,255,136,.3); color: #f0fff3; }
+      #estado.status-ready { background: #123e2a; border: 1px solid #45ef83; color: #c9ffd8; }
+      #estado.status-warning { background: #3c321c; border-color: #c79d45; color: #fff2c4; }
+      .eyebrow { color: #167f45; font-weight: 900; }
+      .case-sidebar {
+        background: linear-gradient(160deg, #0a3c31 0%, #06241e 100%);
+        border-color: #146146; color: #fff;
+        box-shadow: 0 15px 30px rgba(4,43,28,.14);
+      }
+      .case-sidebar .eyebrow { color: #68ff88; }
+      .case-sidebar h2 { font-weight: 850; }
+      .case-sidebar .sidebar-description { color: #c2ded0; }
+      .atajos button {
+        background: rgba(255,255,255,.065); border: 1px solid rgba(149,255,172,.23);
+        color: #fff;
+      }
+      .atajos button:hover, .atajos button:focus-visible {
+        background: rgba(107,255,142,.18); color: #fff;
+        border-color: #68ff88; transform: translateX(2px);
+      }
+      .atajos button strong { color: #e1ffeb; }
+      .atajos button span { color: #b6d9c4; }
+      .sidebar-foot { color: #c0dec9; border-color: #32644e; }
+      .check-icon { background: #66ff86; color: #082b17; }
+      .chat-workspace {
+        border-color: #daeee0; box-shadow: 0 14px 30px rgba(15,56,36,.045);
+      }
+      .workspace-tag { background: #e4f9e9; color: #146535; }
+      .status-dot { background: #2ac35e; box-shadow: 0 0 0 3px rgba(42,195,94,.13); }
+      .intro-card {
+        background: linear-gradient(135deg, #e9fff0, #fafffa);
+        border: 1px solid #c8e9d1;
+      }
+      .intro-icon { background: linear-gradient(140deg, #0d5f35, #19b852); box-shadow: 0 10px 24px rgba(23,165,70,.2); }
+      .intro-card p { color: #557264; }
+      .intro-steps span { color: #2b6548; }
+      .intro-steps b { color: #0c8d3c; }
+      .turno.usuario { background: #effcf2; border-color: #cbeed6; border-left-color: #1bbb57; }
+      #pensando { background: #eaf9ef; }
+      form { background: rgba(248,252,249,.97); border-top-color: #d7e9dc; }
+      .composer-label { color: #25683f; }
+      textarea { border-color: #c2dec9; }
+      textarea:focus { outline-color: rgba(53,217,107,.18); border-color: #26b958; }
+      button[type="submit"] {
+        background: #68ff88; color: #04200e; font-weight: 900;
+        box-shadow: 0 6px 15px rgba(40,180,78,.14);
+      }
+      button[type="submit"]:hover { background: #44e76c; }
+      .composer-hint { color: #6a8071; }
+      @media (max-width: 610px) {
+        .brand-logo { width: 128px !important; align-self: flex-start; }
+        .identity { gap: 13px; }
+        .brand-caption { font-size: 9px; }
+      }
+
+      /* Chat como aplicación: historial desplazable, teclado siempre visible. */
+      body { height: 100dvh; min-height: 0; overflow: hidden; }
+      header { flex: 0 0 auto; }
+      main { flex: 1 1 auto; min-height: 0; overflow: hidden; align-items: stretch; }
+      .case-sidebar { min-height: 0; height: 100%; overflow-y: auto; overscroll-behavior: contain; }
+      .chat-workspace { height: 100%; min-height: 0; overflow: hidden; }
+      #conversacion {
+        min-height: 0; flex: 1 1 auto; overflow-y: auto; overscroll-behavior: contain;
+        padding: 4px 8px 18px 2px; scroll-behavior: smooth;
+        scrollbar-color: #b3d9be transparent;
+      }
+      #pensando { flex: 0 0 auto; }
+      form { position: relative; bottom: auto; flex: 0 0 auto; z-index: 6; }
+      .turno { flex: 0 0 auto; max-width: 100%; }
+      .turno.usuario {
+        align-self: flex-end; width: fit-content; max-width: min(85%, 760px);
+        padding: 15px 20px; border: 1px solid #bfeacb; border-radius: 20px 20px 5px 20px;
+        background: #e5faeb; box-shadow: none;
+      }
+      .turno:not(.usuario) { border-radius: 20px 20px 20px 5px; }
+      .quien { font-weight: 800; letter-spacing: .1em; }
+      .texto { line-height: 1.67; }
+      @media (max-width: 940px) {
+        main { grid-template-columns: minmax(0,1fr); grid-template-rows: auto minmax(0,1fr); }
+        .case-sidebar { max-height: 210px; overflow-y: auto; }
+        .chat-workspace { height: 100%; min-height: 0; }
+      }
+      @media (max-width: 610px) {
+        main { padding: 10px 12px; gap: 10px; }
+        header { padding: 12px 14px; }
+        .case-sidebar { max-height: 160px; padding: 12px; }
+        .case-sidebar .sidebar-description, .case-sidebar .sidebar-foot { display: none; }
+        .case-sidebar h2 { font-size: 16px; margin: 4px 0 9px; }
+        .atajos { gap: 5px; }
+        .atajos button { padding: 7px 9px; }
+        .atajos button span { display: none; }
+        .chat-workspace { padding: 14px; }
+        .workspace-heading { padding-bottom: 10px; }
+        .workspace-heading h2 { font-size: 19px; }
+        .turno.usuario { max-width: 95%; }
+        form { padding: 9px 11px calc(9px + env(safe-area-inset-bottom,0px)); }
+      }
+
+      .texto p { margin: 0 0 13px; }
+      .texto h3, .texto h4 { margin: 19px 0 9px; line-height: 1.3; color: #103c27; }
+      .texto h3 { font-size: 17px; } .texto h4 { font-size: 15px; }
+      .tabla-chat { width: 100%; border-collapse: collapse; margin: 12px 0 19px; font-size: 13px; white-space: normal; }
+      .tabla-chat th { background: #073c2d; color: #e9fff0; text-align: left; font-weight: 750; }
+      .tabla-chat th, .tabla-chat td { border: 1px solid #d0e5d6; padding: 10px 12px; vertical-align: top; }
+      .tabla-chat tbody tr:nth-child(even) { background: #f0faf3; }
+      .texto .item-chat { margin: 4px 0 7px 8px; }
+      .texto hr { border: 0; border-top: 1px solid #d6e9db; margin: 16px 0; }
+      .turno .texto { overflow-x: auto; }
+
+      .demo-btn { width: 100%; margin-top: 17px; border: 0; border-radius: 12px; padding: 14px 16px; background: #68ff88; color: #062413; font-weight: 900; font-size: 13px; cursor: pointer; }
+      .demo-btn:hover { background: #46ec70; }
+      .demo-btn:disabled { opacity: .6; cursor: progress; }
+      .turno.demo { border-left: 4px solid #2fce68; }
+      .turno.demo .texto { font: 12px/1.65 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; max-height: 480px; overflow: auto; }
     </style>
   </head>
   <body>
     <header>
       <div class="topbar">
         <div class="identity">
-          <div class="brand-symbol" aria-hidden="true">P</div>
+          <img class="brand-symbol brand-logo" src="/periferia-logo.png" width="248" height="62" alt="Periferia IT Group" />
           <div>
             <div class="brand-caption">PERIFERIA IT GROUP <span>· LABORATORIO DE IA</span></div>
             <h1>Centro de órdenes de compra</h1>
@@ -326,6 +474,7 @@
         <h2>Bandeja de solicitudes</h2>
         <p class="sidebar-description">Explora los seis escenarios preparados para validar el proceso.</p>
         <div class="atajos" id="atajos"></div>
+        <button type="button" id="ejecutar-demo" class="demo-btn">▶ Ejecutar demo sin IA</button>
         <div class="sidebar-foot"><span class="check-icon">✓</span> Validaciones auditables · SAP simulado</div>
       </aside>
 
@@ -373,6 +522,13 @@
       const botonEnviar = document.getElementById("enviar")
       const estado = document.getElementById("estado")
       const atajos = document.getElementById("atajos")
+      const ejecutarDemo = document.getElementById("ejecutar-demo")
+
+      function seguirConversacion() {
+        requestAnimationFrame(() => {
+          conversacion.scrollTo({ top: conversacion.scrollHeight, behavior: "smooth" })
+        })
+      }
 
       function elemento(etiqueta, clase, texto) {
         const nodo = document.createElement(etiqueta)
@@ -381,11 +537,80 @@
         return nodo
       }
 
+
+      // Renderizado seguro de respuestas: DOM, nunca HTML arbitrario del proveedor.
+      function pintarInline(nodo, texto) {
+        const partes = String(texto).split(/(\*\*[^*]+\*\*)/g)
+        for (const parte of partes) {
+          if (parte.startsWith("**") && parte.endsWith("**")) {
+            nodo.append(elemento("strong", null, parte.slice(2, -2)))
+          } else if (parte) {
+            nodo.append(document.createTextNode(parte.replace(/<br\s*\/?>/gi, " · ")))
+          }
+        }
+      }
+      function pintarMarkdown(nodo, texto) {
+        const lineas = String(texto).split(/\r?\n/)
+        for (let i = 0; i < lineas.length; i++) {
+          const linea = lineas[i].trim()
+          if (!linea) continue
+          if (linea.startsWith("|") && i + 1 < lineas.length &&
+              /^\|[\s:|-]+\|?$/.test(lineas[i + 1].trim()) && lineas[i + 1].includes("---")) {
+            const tabla = elemento("table", "tabla-chat")
+            const tr = elemento("tr")
+            for (const celda of linea.split("|").slice(1, -1)) {
+              const th = elemento("th")
+              pintarInline(th, celda.trim())
+              tr.append(th)
+            }
+            const thead = elemento("thead")
+            thead.append(tr)
+            tabla.append(thead)
+            const tbody = elemento("tbody")
+            i += 2
+            for (; i < lineas.length && lineas[i].trim().startsWith("|"); i++) {
+              const tr = elemento("tr")
+              for (const celda of lineas[i].trim().split("|").slice(1, -1)) {
+                const td = elemento("td")
+                pintarInline(td, celda.trim())
+                tr.append(td)
+              }
+              tbody.append(tr)
+            }
+            tabla.append(tbody)
+            nodo.append(tabla)
+            i--
+          } else {
+            const cabecera = /^(#{1,3})\s+(.+)$/.exec(linea)
+            if (cabecera) {
+              const titulo = elemento(cabecera[1].length === 3 ? "h4" : "h3")
+              pintarInline(titulo, cabecera[2])
+              nodo.append(titulo)
+            } else if (/^[-*]\s+/.test(linea)) {
+              const item = elemento("div", "item-chat")
+              pintarInline(item, "• " + linea.replace(/^[-*]\s+/, ""))
+              nodo.append(item)
+            } else if (/^---+$/.test(linea)) {
+              nodo.append(elemento("hr"))
+            } else {
+              const p = elemento("p")
+              pintarInline(p, linea)
+              nodo.append(p)
+            }
+          }
+        }
+      }
+
       function pintarTurno({ quien, texto, clase, insignia, toolCalls }) {
         const turno = elemento("article", `turno ${clase ?? ""}`.trim())
         turno.append(elemento("div", "quien", quien))
         if (insignia) turno.append(elemento("span", "insignia", insignia))
-        if (texto) turno.append(elemento("div", "texto", texto))
+        if (texto) {
+          const contenido = elemento("div", "texto")
+          if (clase === "usuario" || clase === "error" || clase === "demo") contenido.textContent = texto
+          else pintarMarkdown(contenido, texto)
+          turno.append(contenido)
+        }
         for (const llamada of toolCalls ?? []) {
           const detalle = elemento("details", "llamada")
           const resumen = elemento("summary")
@@ -403,7 +628,7 @@
           turno.append(detalle)
         }
         conversacion.append(turno)
-        turno.scrollIntoView({ behavior: "smooth", block: "end" })
+        seguirConversacion()
       }
 
       async function cargarEstado() {
@@ -481,6 +706,27 @@
         if (evento.key === "Enter" && !evento.shiftKey) {
           evento.preventDefault()
           formulario.requestSubmit()
+        }
+      })
+
+
+      ejecutarDemo.addEventListener("click", async () => {
+        ejecutarDemo.disabled = true
+        pensando.hidden = false
+        seguirConversacion()
+        try {
+          const respuesta = await fetch("/api/demo", { method: "POST" })
+          const datos = await respuesta.json()
+          pintarTurno({
+            quien: "Demo determinista · sin IA",
+            clase: datos.ok ? "demo" : "error",
+            texto: datos.ok ? "Ejecución aislada sin credenciales de Groq ni Anthropic.\n\n" + datos.salida : (datos.error || "Falló la demo"),
+          })
+        } catch (error) {
+          pintarTurno({ quien: "Demo determinista", clase: "error", texto: "Error al ejecutar demo.ts: " + error.message })
+        } finally {
+          ejecutarDemo.disabled = false
+          pensando.hidden = true
         }
       })
 

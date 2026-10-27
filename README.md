@@ -5,7 +5,9 @@ aprobación del líder), lo valida contra los maestros, construye la orden de co
 quedaría en SAP, genera la evidencia de aprobación y crea la OC en un SAP simulado.
 Las excepciones no se resuelven a la fuerza: se clasifican y vuelven al humano.
 
-- **Link de prueba:** https://christmas-counseling-expenditures-boards.trycloudflare.com (túnel efímero; si cambia, se regenera y se actualiza en `SOLUCION.md` §13).
+- **Link de prueba:** https://static-baseline-vatican-anatomy.trycloudflare.com (túnel efímero; si cambia, se regenera y se actualiza en `SOLUCION.md` §13).
+- **IA real verificada:** Groq (modelo `openai/gpt-oss-120b`) respondió por `/api/chat` desde la URL pública y ejecutó `oc_leer_paquete` y `oc_validar` para `sol-004`, sin crear la orden sin autorización.
+- **Interfaz:** identidad original de Periferia, chat con historial desplazable y compositor fijo.
 - **Sin autenticación:** el link es público, como permite el PRD §6.1.
 - **Planteamiento de la solución:** [`SOLUCION.md`](SOLUCION.md).
 
@@ -15,8 +17,8 @@ Requiere **Node 22.6+** (ejecuta TypeScript nativo; no hay paso de build). Proba
 
 ```bash
 npm install
-cp .env.example .env     # y escriba su ANTHROPIC_API_KEY
-npm run dev              # front + API en http://localhost:8787
+cp .env.example .env     # y configure GROQ_API_KEY (o ANTHROPIC_API_KEY)
+npm run dev              # front + API en http://localhost:8794
 ```
 
 Sin clave el servidor arranca igual: sirve el front, responde `/api/health` y `/api/chat`
@@ -27,8 +29,9 @@ con `npm run demo`.
 
 | Variable | Obligatoria | Para qué |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | para el chat | Clave del proveedor LLM. Solo en el backend. |
-| `LLM_MODEL` | no | Modelo; por defecto `claude-sonnet-5`. |
+| `GROQ_API_KEY` | para Groq | Clave privada del proveedor preferido; solo en el backend. |
+| `ANTHROPIC_API_KEY` | alternativa | Clave de Anthropic si Groq no está configurado. |
+| `LLM_MODEL` | no | Modelo; por defecto Groq `openai/gpt-oss-120b` cuando GROQ_API_KEY está configurada. |
 | `PORT` | no | Puerto del backend; por defecto `8787`. |
 | `AGENTE_MAX_ITERACIONES` | no | Tope de iteraciones herramienta→modelo por turno (25). |
 | `AGENTE_MAX_TOKENS_SESION` | no | Tope de tokens por sesión (200 000). |
@@ -71,7 +74,7 @@ adaptador LLM guionado. El adaptador real se verifica con el chat (`npm run dev`
 Ejemplo:
 
 ```bash
-curl -s localhost:8787/api/chat -H 'content-type: application/json' \
+curl -s localhost:8794/api/chat -H 'content-type: application/json' \
   -d '{"sessionId":"demo","message":"Procesa la solicitud sol-004 y no la crees hasta que yo lo confirme."}'
 ```
 
@@ -84,7 +87,8 @@ src/tools/oc.ts              herramientas tipadas con zod (oc_<export>)
 src/tools/registro.ts        validación de argumentos y despacho
 src/lib/                     dominio, parseo, maestros, controles RC1–RC10, payload, evidencia, control.csv
 src/llm/adapter.ts           interfaz del proveedor LLM
-src/llm/anthropic.ts         implementación con el SDK de Anthropic
+src/llm/groq.ts              implementación con Groq y tool-calling real
+src/llm/anthropic.ts         alternativa con SDK de Anthropic
 src/sap/adapter.ts|mock.ts   interfaz SapAdapter y SAP simulado sobre archivos
 src/agent/ciclo.ts           ciclo del agente, sesiones y topes
 src/server.ts                API HTTP y servidor del front
