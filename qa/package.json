@@ -1,0 +1,16 @@
+{
+  "name": "periferia-qa-kit",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Kit QA portátil: Screenplay mínimo, registro con captura bajo fallo, masking de secretos y plantillas Gherkin de negocio.",
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "test:e2e": "node -e \"console.error('BLOQUEADO: requiere lease del broker Qirava y adaptador sin browser launch'); process.exit(1)\"",
+    "cucumber": "cucumber-js features/"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "@cucumber/cucumber": "^11.2.0"
+  }
+}

@@ -17,3 +17,10 @@ env/
 # Logs & temp
 *.log
 *.tmp
+qa/node_modules/
+qa/evidence/
+qa/test-results/
+qa/playwright-report/
+qa/.env
+.env
+.env.*

@@ -41,6 +41,32 @@ Una vertical está **terminada** cuando:
 3. No rompe verticales ya entregadas.
 4. Tiene trazabilidad a su issue de Jira (ver SKILL).
 5. No deja código anticipatorio ni muerto.
+6. **Lleva prueba funcional que valida el estado final** (UI y/o API/BBDD), no solo el
+   recorrido de clicks. Sin esa prueba verde y reproducible, la vertical no está terminada.
+
+## Pruebas funcionales (obligatorio)
+
+- Toda vertical con comportamiento observable exige una prueba que afirme **estado final
+  falsable**, no "se ejecutó la acción". Si el "Entonces" no puede ser falso con el
+  sistema roto, no cuenta.
+- Elige la **capa más barata que da evidencia verdadera** (datos < API < UI); reserva E2E
+  para el flujo principal y para contrastar integración UI↔fuente de verdad.
+- Diseño, matriz de capas, criterios falsables, Gherkin, riesgo y ficha de defecto
+  reproducible: `protocols/qa-engineering.md`.
+- Kit ejecutable (Screenplay mínimo, registro con captura bajo fallo, masking de
+  secretos, plantillas Gherkin): `qa/` — ver `qa/README.md`. Pruebas del helper: `cd qa && npm test`.
+- Referencia de consulta (solo lectura, **no copiar código**): skills `qirava-qa-governance`
+  y `qa-automation-playwright-screenplay`.
+- Prohibido en la preparación: instalar/lanzar navegador o ejecutar Playwright sobre una
+  sesión real; esas dependencias quedan declaradas en `qa/package.json`, sin instalar.
+
+## Gobierno obligatorio de navegadores
+
+- Leer `protocols/browser-governance.md` antes de cualquier acción de UI, de REA o Playwright.
+- La sesión autenticada y las pestañas pertenecen al **broker de Qirava**; jamás crear ventanas, perfiles ni lanzar Chrome/Chromium.
+- MCP Playwright y REA están registrados **localmente**: conexión MCP no significa tener lease de pestaña. Adquirir y verificar lease en el broker antes de navegar; si no se puede verificar, **bloquear navegación**, continuar solo con pruebas sin navegador.
+- `npm run test:e2e` queda bloqueado hasta que exista adaptador verificado del broker: Playwright Test estándar lanzaría un navegador nuevo.
+- Nunca cerrar, resetear o desplazar pestañas alquiladas por otros proyectos ni tocar el servicio de Dani Barbershop.
 
 ## Convenciones
 
