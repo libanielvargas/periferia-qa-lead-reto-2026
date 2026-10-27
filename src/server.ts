@@ -7,7 +7,7 @@
  * GET  /api/casos          casos disponibles en fixtures (para los atajos del front)
  */
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http"
-import { execFile } from "node:child_process"
+import { execFile, spawn } from "node:child_process"
 import { readdirSync, readFileSync, existsSync } from "node:fs"
 import { extname, join, normalize, resolve } from "node:path"
 import { AdaptadorAnthropic } from "./llm/anthropic.ts"
@@ -98,6 +98,95 @@ const servidor = createServer(async (req, res) => {
   const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`)
 
   try {
+
+    if (req.method === "POST" && url.pathname === "/api/demo/stream") {
+      if (demoEnCurso) return json(res, 409, { ok: false, error: "La demo ya está ejecutándose; espere su resultado." })
+      demoEnCurso = true
+
+      // NDJSON: una línea JSON por evento, emitida en cuanto demo.ts produce salida real.
+      res.writeHead(200, {
+        "content-type": "application/x-ndjson; charset=utf-8",
+        "cache-control": "no-store",
+        "x-accel-buffering": "no",
+      })
+      const emitir = (evento: Record<string, unknown>): void => {
+        if (!res.writableEnded) res.write(JSON.stringify(evento) + "\n")
+      }
+
+      emitir({ tipo: "inicio", mensaje: "Ejecución aislada sin credenciales de Groq ni Anthropic." })
+
+      // El hijo nunca recibe las claves de IA: se demuestra que la demo es determinista.
+      const envHijo = Object.fromEntries(
+        Object.entries(process.env).filter(([nombre]) => nombre !== "GROQ_API_KEY" && nombre !== "ANTHROPIC_API_KEY"),
+      )
+      const hijo = spawn(process.execPath, [join(DIRECTORIO, "demo.ts")], { cwd: DIRECTORIO, env: envHijo })
+
+      let cerrado = false
+      const finalizar = (ok: boolean, extra: Record<string, unknown> = {}): void => {
+        if (cerrado) return
+        cerrado = true
+        clearTimeout(temporizador)
+        emitir({ tipo: "fin", ok, ...extra })
+        if (!res.writableEnded) res.end()
+        demoEnCurso = false
+      }
+
+      const temporizador = setTimeout(() => {
+        hijo.kill("SIGKILL")
+        emitir({ tipo: "error", error: "La demo superó el tiempo máximo de 60 s y fue detenida." })
+        finalizar(false, { codigo: null })
+      }, 60_000)
+
+      // Reparte la salida por líneas completas; conserva el resto parcial entre trozos.
+      const hacerLector = (canal: "stdout" | "stderr") => {
+        let pendiente = ""
+        return {
+          dato(trozo: Buffer): void {
+            pendiente += trozo.toString("utf8")
+            let corte: number
+            while ((corte = pendiente.indexOf("\n")) >= 0) {
+              const linea = pendiente.slice(0, corte).replace(/\r$/, "")
+              pendiente = pendiente.slice(corte + 1)
+              emitir({ tipo: "linea", canal, texto: linea })
+            }
+          },
+          vaciar(): void {
+            if (pendiente !== "") {
+              emitir({ tipo: "linea", canal, texto: pendiente.replace(/\r$/, "") })
+              pendiente = ""
+            }
+          },
+        }
+      }
+      const lectorOut = hacerLector("stdout")
+      const lectorErr = hacerLector("stderr")
+      hijo.stdout.on("data", (trozo: Buffer) => lectorOut.dato(trozo))
+      hijo.stderr.on("data", (trozo: Buffer) => lectorErr.dato(trozo))
+
+      hijo.on("error", (error) => {
+        emitir({ tipo: "error", error: "No se pudo ejecutar demo.ts: " + error.message })
+        finalizar(false, { codigo: null })
+      })
+      hijo.on("close", (codigo) => {
+        lectorOut.vaciar()
+        lectorErr.vaciar()
+        if (codigo !== 0 && !cerrado) {
+          emitir({ tipo: "error", error: `demo.ts terminó con código ${codigo}.` })
+        }
+        finalizar(codigo === 0, { codigo })
+      })
+
+      // Si el cliente cierra la conexión, no dejamos el proceso huérfano.
+      res.on("close", () => {
+        if (!cerrado) {
+          hijo.kill()
+          clearTimeout(temporizador)
+          demoEnCurso = false
+          cerrado = true
+        }
+      })
+      return
+    }
 
     if (req.method === "POST" && url.pathname === "/api/demo") {
       if (demoEnCurso) return json(res, 409, { ok: false, error: "La demo ya está ejecutándose; espere su resultado." })

@@ -451,6 +451,13 @@
       .demo-btn:disabled { opacity: .6; cursor: progress; }
       .turno.demo { border-left: 4px solid #2fce68; }
       .turno.demo .texto { font: 12px/1.65 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; max-height: 480px; overflow: auto; }
+      .demo-linea { min-height: 1.1em; }
+      .demo-meta { color: var(--suave); font-style: italic; }
+      .demo-err { color: #ffb4a2; }
+      .demo-error { color: #ff7a66; font-weight: 700; }
+      .insignia.insignia-ok { background: #0f3d22; color: #68ff88; }
+      .insignia.insignia-falla { background: #3d130f; color: #ff7a66; }
+      .insignia.insignia-curso { background: var(--aviso-borde); color: #1b1403; }
     </style>
   </head>
   <body>
@@ -712,21 +719,86 @@
 
       ejecutarDemo.addEventListener("click", async () => {
         ejecutarDemo.disabled = true
-        pensando.hidden = false
-        seguirConversacion()
-        try {
-          const respuesta = await fetch("/api/demo", { method: "POST" })
-          const datos = await respuesta.json()
-          pintarTurno({
-            quien: "Demo determinista · sin IA",
-            clase: datos.ok ? "demo" : "error",
-            texto: datos.ok ? "Ejecución aislada sin credenciales de Groq ni Anthropic.\n\n" + datos.salida : (datos.error || "Falló la demo"),
+
+        // Un único mensaje de demo al que se van agregando las líneas reales.
+        const turno = elemento("article", "turno demo")
+        turno.append(elemento("div", "quien", "Demo determinista · sin IA"))
+        const insignia = elemento("span", "insignia insignia-curso", "⏳ Ejecutando demo.ts…")
+        turno.append(insignia)
+        const contenido = elemento("div", "texto")
+        turno.append(contenido)
+        conversacion.append(turno)
+
+        const autoscroll = () => {
+          requestAnimationFrame(() => {
+            conversacion.scrollTo({ top: conversacion.scrollHeight, behavior: "smooth" })
+            contenido.scrollTop = contenido.scrollHeight
           })
+        }
+        const agregar = (texto, clase) => {
+          const linea = elemento("div", clase)
+          linea.textContent = texto === "" ? " " : texto
+          contenido.append(linea)
+          autoscroll()
+        }
+
+        let huboError = false
+        let recibioFin = false
+        try {
+          const respuesta = await fetch("/api/demo/stream", { method: "POST" })
+          if (!respuesta.ok || !respuesta.body) {
+            const datos = await respuesta.json().catch(() => null)
+            huboError = true
+            agregar("✗ " + (datos?.error || `No se pudo iniciar la demo (HTTP ${respuesta.status}).`), "demo-error")
+          } else {
+            const lector = respuesta.body.getReader()
+            const decodificador = new TextDecoder()
+            let buffer = ""
+            const procesar = (linea) => {
+              if (!linea.trim()) return
+              let evento
+              try { evento = JSON.parse(linea) } catch { return }
+              if (evento.tipo === "inicio") agregar(evento.mensaje, "demo-meta")
+              else if (evento.tipo === "linea") agregar(evento.texto, evento.canal === "stderr" ? "demo-err" : "demo-linea")
+              else if (evento.tipo === "error") { huboError = true; agregar("✗ " + evento.error, "demo-error") }
+              else if (evento.tipo === "fin") {
+                recibioFin = true
+                if (evento.ok) {
+                  insignia.textContent = "✓ Demo completada sin IA"
+                  insignia.className = "insignia insignia-ok"
+                } else {
+                  huboError = true
+                  insignia.textContent = "✗ Demo con errores"
+                  insignia.className = "insignia insignia-falla"
+                }
+              }
+            }
+            while (true) {
+              const { value, done } = await lector.read()
+              if (done) break
+              buffer += decodificador.decode(value, { stream: true })
+              let corte
+              while ((corte = buffer.indexOf("\n")) >= 0) {
+                procesar(buffer.slice(0, corte))
+                buffer = buffer.slice(corte + 1)
+              }
+            }
+            if (buffer.trim()) procesar(buffer)
+          }
         } catch (error) {
-          pintarTurno({ quien: "Demo determinista", clase: "error", texto: "Error al ejecutar demo.ts: " + error.message })
+          huboError = true
+          insignia.textContent = "✗ Error de red"
+          insignia.className = "insignia insignia-falla"
+          agregar("Error al ejecutar demo.ts: " + error.message, "demo-error")
         } finally {
+          if (!recibioFin) {
+            huboError = true
+            insignia.textContent = "✗ Demo interrumpida o incompleta"
+            insignia.className = "insignia insignia-falla"
+            agregar("La transmisión terminó sin confirmación de ejecución completa.", "demo-error")
+          }
           ejecutarDemo.disabled = false
-          pensando.hidden = true
+          autoscroll()
         }
       })
 
