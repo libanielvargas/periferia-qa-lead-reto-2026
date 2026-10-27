@@ -165,33 +165,202 @@
       #pensando .punto:nth-child(2) { animation-delay: 0.15s; }
       #pensando .punto:nth-child(3) { animation-delay: 0.3s; }
       @keyframes latir { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
+
+      /* Interfaz operativa de Periferia: clara, legible y enfocada en decisiones. */
+      :root {
+        color-scheme: light;
+        --fondo: #f4f7fc; --panel: #fff; --borde: #dfe6f1;
+        --texto: #18243b; --suave: #60718b; --acento: #315be8;
+        --aviso-fondo: #fff7e6; --aviso-borde: #ebb954;
+        --error-fondo: #fff0f0; --error-borde: #cb4954; --ok: #15805d;
+      }
+      body {
+        font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: radial-gradient(ellipse at 5% 0%, #e7eeff 0%, transparent 48%), #f5f7fb;
+        color: var(--texto);
+      }
+      header {
+        background: linear-gradient(115deg, #162f68 0%, #1d4187 64%, #3157a6 100%);
+        color: #fff;
+        border: none;
+        padding: 30px clamp(22px, 4vw, 68px);
+        box-shadow: 0 8px 28px rgba(22, 47, 104, .13);
+      }
+      .topbar { max-width: 1330px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+      .identity { display: flex; align-items: center; gap: 20px; }
+      .brand-symbol {
+        width: 60px; height: 60px; border: 1px solid rgba(255,255,255,.4);
+        border-radius: 19px; display: grid; place-items: center; flex: 0 0 auto;
+        background: rgba(255,255,255,.13); font-weight: 800; font-size: 32px;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.25);
+      }
+      .brand-caption { font-size: 11px; font-weight: 800; letter-spacing: .14em; color: #a9cbff; }
+      .brand-caption span { color: rgba(255,255,255,.7); font-weight: 500; }
+      header h1 { font-size: clamp(24px, 2.1vw, 32px); line-height: 1.2; letter-spacing: -.035em; margin: 5px 0 2px; }
+      header p { font-size: 14px; color: #d8e4ff; margin-top: 7px; }
+      #estado {
+        max-width: 330px; margin: 0; padding: 12px 16px; border-radius: 13px;
+        background: rgba(255,255,255,.11); border: 1px solid rgba(255,255,255,.2);
+        color: #f0f6ff; font-size: 13px; font-weight: 600; line-height: 1.4;
+      }
+      #estado.status-warning { background: #fff5df; border-color: #ffda92; color: #80500a; }
+      #estado.status-ready { background: rgba(42,194,139,.16); border-color: rgba(115,237,184,.5); color: #d5ffe9; }
+      main {
+        width: 100%; max-width: 1380px; margin: 0 auto;
+        padding: 28px clamp(18px, 3vw, 40px);
+        display: grid; grid-template-columns: minmax(250px, 310px) minmax(0, 1fr);
+        align-items: start; gap: 24px;
+      }
+      .eyebrow { color: #5573ae; font-size: 11px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+      h2 { letter-spacing: -.025em; }
+      .case-sidebar {
+        background: #fff; border: 1px solid var(--borde); border-radius: 22px;
+        padding: 25px 19px; box-shadow: 0 8px 28px rgba(24,46,82,.035);
+      }
+      .case-sidebar h2 { font-size: 21px; line-height: 1.2; margin: 10px 0; }
+      .sidebar-description { color: var(--suave); margin: 0 0 22px; font-size: 14px; }
+      .atajos { display: grid; grid-template-columns: 1fr; gap: 9px; }
+      .atajos button {
+        width: 100%; padding: 12px 14px; display: flex; flex-direction: column; align-items: flex-start;
+        gap: 2px; background: #f7f9fd; color: var(--texto); border: 1px solid #e3eafa;
+        border-radius: 12px; text-align: left; transition: background .15s, border-color .15s, transform .15s;
+      }
+      .atajos button:hover, .atajos button:focus-visible {
+        background: #edf3ff; border-color: #8caaff; color: #173f99; transform: translateX(2px);
+      }
+      .atajos button strong { font-size: 13px; letter-spacing: .04em; }
+      .atajos button span { color: #6e7e95; font-size: 12px; }
+      .sidebar-foot {
+        padding-top: 22px; margin-top: 20px; border-top: 1px solid var(--borde);
+        color: #62738e; font-size: 12px; display: flex; align-items: center; gap: 8px;
+      }
+      .check-icon { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 8px; background: #dbf6eb; color: #138560; font-weight: 800; }
+      .chat-workspace {
+        background: #fff; border: 1px solid var(--borde); border-radius: 22px; min-height: 470px;
+        padding: 26px; box-shadow: 0 8px 28px rgba(24,46,82,.04); display: flex; flex-direction: column; gap: 20px;
+      }
+      .workspace-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; border-bottom: 1px solid var(--borde); padding-bottom: 19px; }
+      .workspace-heading h2 { font-size: 24px; margin: 5px 0 0; }
+      .workspace-tag {
+        flex-shrink: 0; display: inline-flex; align-items: center; gap: 8px;
+        border-radius: 30px; background: #eef6ff; color: #295b9c; padding: 8px 12px; font-size: 12px; font-weight: 700;
+      }
+      .status-dot { width: 7px; height: 7px; border-radius: 50%; background: #3492d6; }
+      #conversacion { gap: 14px; min-width: 0; }
+      .intro-card {
+        padding: 37px 28px; text-align: center; background: linear-gradient(135deg, #f9fbff, #f1f5ff);
+        border: 1px dashed #c9d7f0; border-radius: 18px;
+      }
+      .intro-icon {
+        width: 58px; height: 58px; margin: 0 auto 18px; display: grid; place-items: center;
+        border-radius: 18px; color: #fff; font-size: 31px;
+        background: linear-gradient(145deg, #3767e8, #6b82ee); box-shadow: 0 10px 20px rgba(49,91,232,.23);
+      }
+      .intro-card h3 { font-size: clamp(21px, 2.1vw, 27px); letter-spacing: -.035em; line-height: 1.25; max-width: 530px; margin: 10px auto; }
+      .intro-card p { max-width: 580px; color: #60718b; margin: 12px auto 24px; font-size: 14px; }
+      .intro-steps { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; }
+      .intro-steps span { font-size: 12px; color: #4a5f82; font-weight: 700; white-space: nowrap; }
+      .intro-steps b { color: #315be8; margin-right: 4px; }
+      .turno { background: #fff; border-radius: 15px; box-shadow: 0 2px 12px rgba(24,46,82,.035); }
+      .turno.usuario { background: #f2f6ff; border: 1px solid #d8e3fc; border-left: 4px solid #315be8; }
+      .turno.error { border-left: 4px solid #cb4954; }
+      .turno.confirmacion { border-left: 4px solid #dfa630; }
+      #pensando[hidden] { display: none !important; }
+      #pensando { padding: 12px 16px; background: #f1f5ff; border-radius: 13px; }
+      form {
+        position: sticky; z-index: 5; bottom: 0; width: 100%; border-top: 1px solid #dde6f5;
+        padding: 16px 24px calc(14px + env(safe-area-inset-bottom,0px));
+        background: rgba(247,249,253,.96); backdrop-filter: blur(12px);
+      }
+      form > .composer { display: block; max-width: 900px; margin: 0 auto; width: 100%; }
+      .composer-label { display: block; color: #5b7096; font-weight: 800; font-size: 11px; letter-spacing: .13em; margin-bottom: 8px; }
+      .composer-input { display: flex; align-items: stretch; gap: 10px; }
+      textarea {
+        background: #fff; border: 1px solid #cdd9ef; border-radius: 13px; padding: 13px 15px; min-height: 52px;
+        box-shadow: 0 1px 4px rgba(30,50,90,.04);
+      }
+      textarea:focus { outline: 3px solid rgba(67,115,237,.17); border-color: #6b91f3; }
+      button[type="submit"] { border-radius: 13px; padding: 0 24px; background: #315be8; box-shadow: 0 5px 12px rgba(49,91,232,.2); }
+      button[type="submit"]:hover { background: #224acb; }
+      button[type="submit"] span { margin-left: 4px; }
+      .composer-hint { font-size: 11px; color: #72809a; margin-top: 7px; }
+      @media (max-width: 940px) {
+        .topbar { flex-direction: column; align-items: flex-start; }
+        main { grid-template-columns: 1fr; padding-top: 18px; }
+        .atajos { grid-template-columns: repeat(3, minmax(0,1fr)); }
+        .chat-workspace { min-height: 380px; }
+      }
+      @media (max-width: 610px) {
+        header { padding: 22px 18px; } .brand-symbol { width: 47px; height: 47px; font-size: 25px; }
+        header h1 { font-size: 22px; } .identity { align-items: flex-start; gap: 12px; }
+        #estado { max-width: none; width: 100%; }
+        .atajos { grid-template-columns: repeat(2, minmax(0,1fr)); }
+        .case-sidebar, .chat-workspace { padding: 17px; border-radius: 16px; }
+        .workspace-heading { align-items: flex-start; flex-direction: column; }
+        .intro-card { padding: 27px 15px; }
+        .intro-steps { gap: 8px; } .composer-hint { display: none; }
+        form { padding: 12px; }
+        .composer-label { display: none; }
+        button[type="submit"] { padding: 0 13px; }
+      }
     </style>
   </head>
   <body>
     <header>
-      <h1>Agente de Órdenes de Compra SAP</h1>
-      <p>Reto técnico 03 · Periferia IT Group — prepara, valida y crea órdenes de compra en un SAP simulado.</p>
-      <div id="estado">Consultando estado del backend…</div>
+      <div class="topbar">
+        <div class="identity">
+          <div class="brand-symbol" aria-hidden="true">P</div>
+          <div>
+            <div class="brand-caption">PERIFERIA IT GROUP <span>· LABORATORIO DE IA</span></div>
+            <h1>Centro de órdenes de compra</h1>
+            <p>Decisiones de compra con control, trazabilidad y supervisión humana.</p>
+          </div>
+        </div>
+        <div id="estado" role="status">Conectando con el sistema…</div>
+      </div>
     </header>
 
     <main>
-      <div class="atajos" id="atajos"></div>
-      <div id="conversacion"></div>
-      <div id="pensando" hidden>
-        <span class="punto"></span><span class="punto"></span><span class="punto"></span>
-        <span>El agente está pensando y ejecutando herramientas…</span>
-      </div>
+      <aside class="case-sidebar">
+        <div class="eyebrow">01 / CASOS DE NEGOCIO</div>
+        <h2>Bandeja de solicitudes</h2>
+        <p class="sidebar-description">Explora los seis escenarios preparados para validar el proceso.</p>
+        <div class="atajos" id="atajos"></div>
+        <div class="sidebar-foot"><span class="check-icon">✓</span> Validaciones auditables · SAP simulado</div>
+      </aside>
+
+      <section class="chat-workspace" aria-label="Área de conversación">
+        <div class="workspace-heading">
+          <div>
+            <div class="eyebrow">02 / ASISTENTE DE COMPRAS</div>
+            <h2>Espacio de trabajo</h2>
+          </div>
+          <span class="workspace-tag"><span class="status-dot"></span> Supervisión humana</span>
+        </div>
+        <div id="conversacion" aria-live="polite">
+          <div class="intro-card" id="bienvenida">
+            <div class="intro-icon" aria-hidden="true">✦</div>
+            <div class="eyebrow">TU COPILOTO OPERATIVO</div>
+            <h3>Una compra correcta comienza con una buena validación.</h3>
+            <p>Selecciona una solicitud de la izquierda o escribe una instrucción. El agente consultará los datos, aplicará controles y te pedirá autorización cuando sea necesaria.</p>
+            <div class="intro-steps"><span><b>01</b> Analizar</span><span><b>02</b> Validar</span><span><b>03</b> Confirmar</span><span><b>04</b> Registrar</span></div>
+          </div>
+        </div>
+        <div id="pensando" hidden>
+          <span class="punto"></span><span class="punto"></span><span class="punto"></span>
+          <span>El agente está analizando la solicitud…</span>
+        </div>
+      </section>
     </main>
 
     <form id="formulario">
-      <div>
-        <textarea
-          id="mensaje"
-          rows="1"
-          placeholder="Ej.: Procesa la solicitud sol-004. Muéstrame la OC como quedaría en SAP y no la crees hasta que yo lo confirme."
-          autocomplete="off"
-        ></textarea>
-        <button type="submit" id="enviar">Enviar</button>
+      <div class="composer">
+        <label for="mensaje" class="composer-label">INSTRUCCIÓN PARA EL AGENTE</label>
+        <div class="composer-input">
+          <textarea id="mensaje" rows="1" placeholder="Ej.: Analiza sol-004, muéstrame las validaciones y espera mi confirmación." autocomplete="off"></textarea>
+          <button type="submit" id="enviar">Enviar <span aria-hidden="true">↗</span></button>
+        </div>
+        <div class="composer-hint">Enter para enviar · Shift + Enter para nueva línea · Los cambios críticos requieren tu confirmación</div>
       </div>
     </form>
 
@@ -240,19 +409,23 @@
       async function cargarEstado() {
         try {
           const salud = await (await fetch("/api/health")).json()
+          estado.className = salud.llm_configurado ? "status-ready" : "status-warning"
           estado.textContent = salud.llm_configurado
-            ? `Backend activo · proveedor ${salud.provider} · modelo ${salud.model} · tope ${salud.limites.iteracionesPorTurno} iteraciones/turno · herramientas: ${salud.herramientas.join(", ")}`
-            : `Backend activo SIN modelo: ${salud.motivo_llm}`
-          if (!salud.llm_configurado) {
-            pintarTurno({
-              quien: "Sistema",
-              clase: "error",
-              texto: `El chat con modelo real está deshabilitado: ${salud.motivo_llm}`,
-            })
+            ? `● IA conectada · ${salud.model} · ${salud.herramientas.length} herramientas`
+            : "● Sistema disponible · Conexión de IA pendiente de configurar"
+          const etiquetas = {
+            "sol-001": "Compra correctamente aprobada",
+            "sol-002": "Proveedor sin registro",
+            "sol-003": "Autorización insuficiente",
+            "sol-004": "Diferencia en cotización",
+            "sol-005": "Compra retroactiva",
+            "sol-006": "IVA por confirmar",
           }
           const casos = (await (await fetch("/api/casos")).json()).casos ?? []
           for (const caso of casos) {
-            const boton = elemento("button", null, `Procesar ${caso}`)
+            const boton = elemento("button", "caso-btn")
+            boton.append(elemento("strong", null, caso.toUpperCase()))
+            boton.append(elemento("span", null, etiquetas[caso] ?? "Revisar solicitud"))
             boton.type = "button"
             boton.addEventListener("click", () => {
               entrada.value = `Procesa la solicitud "${caso}". Muéstrame la OC como quedaría en SAP, qué validaciones pasó y cuáles no, y no la crees hasta que yo lo confirme.`
