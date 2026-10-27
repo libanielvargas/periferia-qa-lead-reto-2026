@@ -14,6 +14,16 @@ env/
 .idea/
 .vscode/
 
+# Aplicación reto 03 (PRD requiere excluidos del entregable)
+node_modules/
+/out/
+/dist/
+/build/
+.coverage/
+coverage/
+playwright-report/
+test-results/
+
 # Logs & temp
 *.log
 *.tmp
@@ -24,3 +34,4 @@ qa/playwright-report/
 qa/.env
 .env
 .env.*
+!.env.example

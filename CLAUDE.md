@@ -1,5 +1,9 @@
 # CLAUDE.md — Prueba técnica Periferia QA Lead
 
+## Reto seleccionado y arranque visible (AUTORIDAD ACTUAL)
+
+Libaniel seleccionó RETO 03 «Órdenes de Compra SAP» el 27-oct-2026. La fuente obligatoria y completa es `PRD.md`; los casos inmutables están en `fixtures/reto-03/`. Para proceder leer `ARRANQUE_CLAUDE.md` y ejecutar las verticales de `EJECUCION_RETO_03.md`. Claude Code debe trabajar en la ventana visible de VS Code de Libaniel, nunca mediante procesos ocultos disparados por un agente externo. Se omite Jira durante la evaluación: el tablero único es `EJECUCION_RETO_03.md`. **Todos los P0, chat con LLM real, demo.ts sin LLM, URL pública, pruebas y SOLUCION.md son obligatorios.** No reutilizar código privado Qirava.
+
 Reglas operativas para el desafío de **desarrollo asistido por IA de 2 horas**.
 Este archivo manda sobre cualquier comportamiento por defecto.
 
