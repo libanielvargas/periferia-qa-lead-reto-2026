@@ -1,0 +1,180 @@
+/**
+ * API HTTP del chat y servidor del front (PRD §6.4). Node puro: sin framework web.
+ *
+ * POST /api/chat           { sessionId, message } → { reply, toolCalls[], needsConfirmation }
+ * GET  /api/sessions/:id   historial completo de la sesión
+ * GET  /api/health         { ok, provider, model } — sin exponer claves
+ * GET  /api/casos          casos disponibles en fixtures (para los atajos del front)
+ */
+import { createServer, type IncomingMessage, type ServerResponse } from "node:http"
+import { readdirSync, readFileSync, existsSync } from "node:fs"
+import { extname, join, normalize, resolve } from "node:path"
+import { AdaptadorAnthropic } from "./llm/anthropic.ts"
+import { ErrorProveedor, type LlmAdapter } from "./llm/adapter.ts"
+import {
+  LIMITES,
+  ejecutarTurno,
+  obtenerSesion,
+  registrarTurnoVisible,
+} from "./agent/ciclo.ts"
+import { nombresHerramientas } from "./tools/registro.ts"
+
+const DIRECTORIO = resolve(import.meta.dirname, "..")
+const PUERTO = Number(process.env.PORT ?? 8787)
+const MODELO = process.env.LLM_MODEL ?? "claude-sonnet-5"
+const LIMITE_CUERPO = 1_000_000
+
+/** El adaptador se construye una vez; si no hay clave, el chat responde 503 explicando. */
+function construirAdaptador(): { adaptador: LlmAdapter | null; motivo: string | null } {
+  const clave = process.env.ANTHROPIC_API_KEY
+  if (!clave || clave.trim() === "") {
+    return {
+      adaptador: null,
+      motivo:
+        "el backend no tiene ANTHROPIC_API_KEY configurada; el chat con modelo real está deshabilitado (las herramientas siguen verificables con `npm run demo`)",
+    }
+  }
+  try {
+    return { adaptador: new AdaptadorAnthropic(clave, MODELO), motivo: null }
+  } catch (causa) {
+    return { adaptador: null, motivo: causa instanceof Error ? causa.message : String(causa) }
+  }
+}
+
+const { adaptador, motivo } = construirAdaptador()
+
+function json(res: ServerResponse, estado: number, cuerpo: unknown): void {
+  const texto = JSON.stringify(cuerpo)
+  res.writeHead(estado, {
+    "content-type": "application/json; charset=utf-8",
+    "cache-control": "no-store",
+  })
+  res.end(texto)
+}
+
+async function leerCuerpo(req: IncomingMessage): Promise<unknown> {
+  const trozos: Buffer[] = []
+  let total = 0
+  for await (const trozo of req) {
+    const buffer = trozo as Buffer
+    total += buffer.length
+    if (total > LIMITE_CUERPO) throw new Error("cuerpo de la petición demasiado grande")
+    trozos.push(buffer)
+  }
+  if (total === 0) return {}
+  return JSON.parse(Buffer.concat(trozos).toString("utf8"))
+}
+
+const TIPOS: Record<string, string> = {
+  ".html": "text/html; charset=utf-8",
+  ".css": "text/css; charset=utf-8",
+  ".js": "text/javascript; charset=utf-8",
+  ".svg": "image/svg+xml",
+}
+
+function servirEstatico(ruta: string, res: ServerResponse): boolean {
+  const relativa = ruta === "/" ? "index.html" : normalize(ruta).replace(/^(\.\.[/\\])+/, "").slice(1)
+  const archivo = join(DIRECTORIO, "web", relativa)
+  if (!archivo.startsWith(join(DIRECTORIO, "web")) || !existsSync(archivo)) return false
+  res.writeHead(200, { "content-type": TIPOS[extname(archivo)] ?? "application/octet-stream" })
+  res.end(readFileSync(archivo))
+  return true
+}
+
+function casosDisponibles(): string[] {
+  const base = join(DIRECTORIO, "fixtures", "reto-03", "solicitudes")
+  if (!existsSync(base)) return []
+  return readdirSync(base, { withFileTypes: true })
+    .filter((entrada) => entrada.isDirectory())
+    .map((entrada) => entrada.name)
+    .sort()
+}
+
+const servidor = createServer(async (req, res) => {
+  const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`)
+
+  try {
+    if (req.method === "GET" && url.pathname === "/api/health") {
+      // Nunca expone la clave: solo si está configurada o no.
+      return json(res, 200, {
+        ok: true,
+        provider: "anthropic",
+        model: MODELO,
+        llm_configurado: adaptador !== null,
+        motivo_llm: motivo,
+        herramientas: nombresHerramientas(),
+        limites: LIMITES,
+      })
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/casos") {
+      return json(res, 200, { ok: true, casos: casosDisponibles() })
+    }
+
+    if (req.method === "GET" && url.pathname.startsWith("/api/sessions/")) {
+      const id = decodeURIComponent(url.pathname.slice("/api/sessions/".length))
+      const sesion = obtenerSesion(id)
+      return json(res, 200, {
+        ok: true,
+        sessionId: sesion.id,
+        historial: sesion.historialVisible,
+        tokens_sesion: sesion.tokensUsados,
+      })
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/chat") {
+      const cuerpo = (await leerCuerpo(req)) as { sessionId?: unknown; message?: unknown }
+      const sessionId = typeof cuerpo.sessionId === "string" && cuerpo.sessionId !== ""
+        ? cuerpo.sessionId
+        : null
+      const message = typeof cuerpo.message === "string" ? cuerpo.message.trim() : ""
+      if (!sessionId) return json(res, 400, { ok: false, error: "falta sessionId" })
+      if (message === "") return json(res, 400, { ok: false, error: "falta message" })
+      if (message.length > 4000) {
+        return json(res, 400, { ok: false, error: "el mensaje excede 4000 caracteres" })
+      }
+      if (!adaptador) return json(res, 503, { ok: false, error: motivo })
+
+      const sesion = obtenerSesion(sessionId)
+      try {
+        const turno = await ejecutarTurno(adaptador, sesion, message, {
+          directory: DIRECTORIO,
+          sessionId,
+        })
+        registrarTurnoVisible(sesion, turno)
+        return json(res, 200, {
+          ok: true,
+          reply: turno.reply,
+          toolCalls: turno.toolCalls,
+          needsConfirmation: turno.needsConfirmation,
+          iteraciones: turno.iteraciones,
+          limiteAlcanzado: turno.limiteAlcanzado,
+          uso: turno.uso,
+        })
+      } catch (causa) {
+        // CA5: el error se muestra en lenguaje claro y la sesión sigue viva.
+        const texto =
+          causa instanceof ErrorProveedor
+            ? causa.message
+            : `error inesperado del backend: ${causa instanceof Error ? causa.message : String(causa)}`
+        return json(res, 502, { ok: false, error: texto })
+      }
+    }
+
+    if (req.method === "GET" && servirEstatico(url.pathname, res)) return
+
+    return json(res, 404, { ok: false, error: `ruta no encontrada: ${req.method} ${url.pathname}` })
+  } catch (causa) {
+    return json(res, 400, {
+      ok: false,
+      error: causa instanceof Error ? causa.message : String(causa),
+    })
+  }
+})
+
+servidor.listen(PUERTO, () => {
+  console.log(`▸ Agente de Órdenes de Compra SAP en http://localhost:${PUERTO}`)
+  console.log(`  modelo: ${MODELO} · LLM ${adaptador ? "configurado" : `no configurado (${motivo})`}`)
+  console.log(`  herramientas: ${nombresHerramientas().join(", ")}`)
+  console.log(`  casos: ${casosDisponibles().join(", ") || "(ninguno)"}`)
+})
